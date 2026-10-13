@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Triage Assessment | Severity Prediction System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        @media print {
+            .navbar, .top-status-bar, .form-actions, .footer { display: none !important; }
+            body { background: white; color: black; }
+            .card, .triage-hero { box-shadow: none; border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-brand-logo">SP</div>
+            <div>
+                <div>Severity Prediction System</div>
+                <div style="font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-top: -2px;">
+                    Enterprise Emergency Triage Platform
+                </div>
+            </div>
+            <span class="nav-brand-badge">PROD v2.4</span>
+        </a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="/">&#8592; Return to Assessment Portal</a></li>
+                <li><a href="/about">System Architecture</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Triage Command Center Hero -->
+        {% set pred_lower = prediction | lower %}
+        {% if 'fatal' in pred_lower or 'critical' in pred_lower %}
+            {% set theme_class = 'theme-fatal' %}
+            {% set pill_class = 'badge-fatal-pill' %}
+            {% set gauge_color = '#ef4444' %}
+        {% elif 'severe' in pred_lower or 'serious' in pred_lower %}
+            {% set theme_class = 'theme-severe' %}
+            {% set pill_class = 'badge-severe-pill' %}
+            {% set gauge_color = '#f97316' %}
+        {% elif 'moderate' in pred_lower %}
+            {% set theme_class = 'theme-moderate' %}
+            {% set pill_class = 'badge-moderate-pill' %}
+            {% set gauge_color = '#f59e0b' %}
+        {% else %}
+            {% set theme_class = 'theme-minor' %}
+            {% set pill_class = 'badge-minor-pill' %}
+            {% set gauge_color = '#10b981' %}
+        {% endif %}
+
+        <section class="triage-hero {{ theme_class }}">
+            <div class="triage-top-grid">
+                <div>
+                    <div class="triage-label-pill {{ pill_class }}">
+                        &#9679; Triage Classification Result: {{ advice.urgency }}
+                    </div>
+                    <h1 class="triage-result-title">
+                        {{ prediction }} Severity
+                    </h1>
+                    <p class="triage-summary-line">
+                        {{ advice.description }}
+                    </p>
+                    <div style="margin-top: 1.25rem; font-size: 0.88rem; color: var(--text-muted);">
+                        Inference Engine: <strong>{{ selected_model }}</strong> &bull; Calibrated Probability Output
+                    </div>
+                </div>
+
+                <!-- Circular Semi-Gauge -->
+                <div class="gauge-card">
+                    <svg class="gauge-svg" viewBox="0 0 100 55">
+                        <!-- Background Arc -->
+                        <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#e2e8f0" stroke-width="9" stroke-linecap="round" />
+                        <!-- Value Arc: circumference of semi circle r=40 is ~125.6 -->
+                        {% set arc_len = 125.66 %}
+                        {% set dash_val = (confidence / 100.0) * arc_len %}
+                        <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="{{ gauge_color }}" stroke-width="9" stroke-linecap="round"
+                              stroke-dasharray="{{ arc_len }}" stroke-dashoffset="{{ arc_len - dash_val }}"
+                              style="transition: stroke-dashoffset 1s ease;" />
+                    </svg>
+                    <div class="gauge-val-text" style="color: {{ gauge_color }};">
+                        {{ confidence }}%
+                    </div>
+                    <div class="gauge-label">Confidence Index</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Emergency Operational Triage Protocol -->
+        <section class="dispatch-action-box">
+            <div class="card-header" style="margin-bottom: 1rem;">
+                <div>
+                    <h2 class="card-title">&#128657; Automated Triage Protocol &amp; Emergency Action</h2>
+                    <p class="card-desc">Immediate dispatch orders based on predicted impact severity tier</p>
+                </div>
+                <div>
+                    <span style="background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 0.8rem; padding: 0.3rem 0.75rem; border-radius: 6px;">
+                        PRIORITY LEVEL: {{ advice.level }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="dispatch-grid">
+                <div class="dispatch-item" style="border-left-color: {{ gauge_color }};">
+                    <div class="dispatch-item-title">&#128680; Dispatch Action Order</div>
+                    <div class="dispatch-item-desc">{{ advice.action }}</div>
+                </div>
+                <div class="dispatch-item">
+                    <div class="dispatch-item-title">&#127973; Trauma / Hospital Triage</div>
+                    <div class="dispatch-item-desc">
+                        {% if 'fatal' in pred_lower or 'severe' in pred_lower %}
+                        Direct transport to Level 1 Comprehensive Trauma Center. ICU resuscitation bay standby.
+                        {% elif 'moderate' in pred_lower %}
+                        Secondary regional emergency facility transport. Orthopedic and neuro evaluation standby.
+                        {% else %}
+                        Local outpatient / minor injury unit or on-scene paramedic evaluation sufficient.
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="dispatch-item">
+                    <div class="dispatch-item-title">&#128679; Corridor Clearance</div>
+                    <div class="dispatch-item-desc">
+                        {% if 'fatal' in pred_lower or 'severe' in pred_lower %}
+                        Full dual-carriageway traffic diversion. Collision investigation unit on-site.
+                        {% else %}
+                        Single-lane rolling block. Rapid wreckage clearance and tow recovery dispatch.
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Risk Factor Highlights -->
+            <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-main);">
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                    Key Risk Drivers Identified in Incident Profile:
+                </div>
+                <div class="risk-drivers-container">
+                    {% if input_received.Vehicle_Speed and input_received.Speed_Limit and (input_received.Vehicle_Speed > input_received.Speed_Limit) %}
+                    <span class="risk-chip">
+                        &#9888; Velocity Violation: +{{ (input_received.Vehicle_Speed - input_received.Speed_Limit) | round(1) }} km/h Above Limit
+                    </span>
+                    {% endif %}
+
+                    {% if input_received.Driver_Alcohol == 'Yes' %}
+                    <span class="risk-chip">&#9888; Driver Alcohol Impairment</span>
+                    {% else %}
+                    <span class="safe-chip">&#10003; Zero Alcohol Detected</span>
+                    {% endif %}
+
+                    {% if input_received.Seatbelt_Restraint == 'Not_Worn' %}
+                    <span class="risk-chip">&#9888; Restraint Not Fastened (High Ejection Risk)</span>
+                    {% else %}
+                    <span class="safe-chip">&#10003; Safety Belt Restrained</span>
+                    {% endif %}
+
+                    {% if input_received.Vehicle_Type == 'Motorcycle' %}
+                    <span class="risk-chip">&#9888; High Vulnerability: Motorcycle Impact</span>
+                    {% endif %}
+
+                    {% if input_received.Road_Surface_Conditions in ['Ice', 'Wet', 'Flooded'] %}
+                    <span class="risk-chip">&#9888; Hazardous Surface: {{ input_received.Road_Surface_Conditions }} Pavement</span>
+                    {% endif %}
+
+                    {% if input_received.Lighting_Conditions == 'Darkness_No_Lights' %}
+                    <span class="risk-chip">&#9888; Zero Illumination (Night Corridor)</span>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Multi-Class Probability Cards Grid -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">&#128202; Calibrated Probability Distribution Across Classes</h3>
+                    <p class="card-desc">Multinomial confidence estimation across all four clinical tiers</p>
+                </div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">
+                    Sum: 100.0%
+                </div>
+            </div>
+
+            <div class="prob-cards-grid">
+                {% for c_name, p_val in probabilities.items() %}
+                {% set is_selected = (c_name == prediction) %}
+                <div class="prob-card {% if is_selected %}active-class{% endif %}" 
+                     style="{% if is_selected %}border-color: {{ gauge_color }}; background: #fafbfc;{% endif %}">
+                    <div class="prob-card-header">
+                        <span class="prob-card-title">{{ c_name }}</span>
+                        {% if is_selected %}
+                        <span style="font-size: 0.72rem; font-weight: 800; background: {{ gauge_color }}; color: white; padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase;">
+                            PREDICTED
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="prob-card-val" style="color: {% if is_selected %}{{ gauge_color }}{% else %}var(--text-main){% endif %};">
+                        {{ p_val }}%
+                    </div>
+                    <div class="prob-bar-track">
+                        <div class="prob-bar-fill" 
+                             style="width: {{ p_val }}%; background: {% if is_selected %}{{ gauge_color }}{% else %}#cbd5e1{% endif %};">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Ingestion Feature Summary Table -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">&#128221; Submitted Incident Attributes</h3>
+                    <p class="card-desc">Exact parameter vector submitted to the model inference pipeline</p>
+                </div>
+                <div>
+                    <button class="btn btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;" onclick="window.print()">
+                        &#128438; Print Assessment Sheet
+                    </button>
+                </div>
+            </div>
+
+            <div class="data-table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter Name</th>
+                            <th>Recorded Value</th>
+                            <th>Domain Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, val in input_received.items() %}
+                        <tr>
+                            <td style="font-weight: 700; color: var(--text-main);">
+                                {{ key | replace('_', ' ') }}
+                            </td>
+                            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--primary);">
+                                {{ val }}
+                            </td>
+                            <td style="color: var(--text-muted); font-size: 0.85rem;">
+                                {% if key == 'Vehicle_Speed' %}Velocity at impact (km/h)
+                                {% elif key == 'Speed_Limit' %}Posted regulatory limit (km/h)
+                                {% elif key == 'Driver_Alcohol' %}Driver blood alcohol impairment status
+                                {% elif key == 'Seatbelt_Restraint' %}Occupant safety restraint deployment
+                                {% elif key == 'Weather_Conditions' %}Atmospheric condition
+                                {% elif key == 'Road_Surface_Conditions' %}Pavement friction coefficient
+                                {% else %}Observable collision attribute
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-actions" style="margin-top: 2rem;">
+                <a href="/" class="btn btn-primary" style="font-size: 1.05rem;">
+                    &#8592; Assess Another Incident
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <strong style="color: white;">Severity Prediction Project</strong> &bull; Emergency Response AI Platform
+            </div>
+            <div style="font-size: 0.8rem; color: #64748b;">
+                Triage Incident Ref: <span style="color: #60a5fa; font-family: monospace;">TX-{{ (confidence * 100) | int }}-{{ prediction }}</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

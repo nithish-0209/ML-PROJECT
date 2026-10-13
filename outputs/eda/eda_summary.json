@@ -1,0 +1,43 @@
+{
+    "dataset_path": "C:\\Users\\nithi\\OneDrive\\Desktop\\ML PRO\\severity_prediction_project\\data\\dataset.csv",
+    "total_rows": 2208,
+    "total_columns": 15,
+    "duplicate_rows": 8,
+    "missing_cells_total": 121,
+    "target_column": "Accident_Severity",
+    "target_classes": [
+        "Minor",
+        "Moderate",
+        "Severe",
+        "Fatal"
+    ],
+    "class_counts": {
+        "Minor": 1148,
+        "Moderate": 618,
+        "Severe": 309,
+        "Fatal": 133
+    },
+    "class_percentages": {
+        "Minor": 51.99,
+        "Moderate": 27.99,
+        "Severe": 13.99,
+        "Fatal": 6.02
+    },
+    "numerical_features": [
+        "Driver_Age",
+        "Vehicle_Speed",
+        "Speed_Limit",
+        "Number_of_Vehicles",
+        "Number_of_Casualties"
+    ],
+    "categorical_features": [
+        "Weather_Conditions",
+        "Road_Surface_Conditions",
+        "Lighting_Conditions",
+        "Vehicle_Type",
+        "Driver_Alcohol",
+        "Seatbelt_Restraint",
+        "Traffic_Density",
+        "Urban_Rural"
+    ]
+}

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Severity Prediction Command Center | AI Incident Triage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Top Production Telemetry Bar -->
+    <aside class="top-status-bar">
+        <div class="status-indicator">
+            <span class="pulse-dot"></span>
+            <span>SYSTEM STATUS: <strong>HEALTHY &bull; ONLINE</strong></span>
+            <span style="color: #475569;">|</span>
+            <span>CHAMPION MODEL: <strong>{{ selected_model }}</strong></span>
+            <span style="color: #475569;">|</span>
+            <span>PARITY: <strong>ZERO SKEW ENFORCED</strong></span>
+        </div>
+        <div>
+            <span>PORT 5000 &bull; DOCKER COMPLIANT</span>
+        </div>
+    </aside>
+
+    <!-- Main Navigation Header -->
+    <header class="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-brand-logo">SP</div>
+            <div>
+                <div>Severity Prediction System</div>
+                <div style="font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-top: -2px;">
+                    Enterprise Emergency Triage Platform
+                </div>
+            </div>
+            <span class="nav-brand-badge">PROD v2.4</span>
+        </a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="/" class="active">&#9679; Assessment Portal</a></li>
+                <li><a href="/about">&#9670; System Architecture &amp; Metrics</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="hero-banner">
+            <div class="hero-tag">&#9889; REAL-TIME SUPERVISED MACHINE LEARNING INFERENCE</div>
+            <h1 class="hero-title">Incident <span>Severity Prediction</span> Engine</h1>
+            <p class="hero-subtitle">
+                Advanced emergency triage intelligence analyzing vehicle dynamics, environmental friction, 
+                and behavioral risk factors to predict injury severity and automate medical dispatch.
+            </p>
+        </section>
+
+        <!-- Flash error alerts -->
+        {% if error %}
+        <div style="background: #fef2f2; border-left: 5px solid #ef4444; padding: 1.25rem; border-radius: 8px; margin-bottom: 2rem; color: #991b1b;">
+            <strong>Execution Error:</strong> {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Quick Scenario Presets Bar -->
+        <section class="presets-card">
+            <div class="presets-label">
+                <span style="color: #f59e0b; font-size: 1.1rem;">&#9889;</span>
+                <span>Quick Scenario Presets:</span>
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: normal;">(1-Click Form Fill)</span>
+            </div>
+            <div class="presets-group">
+                <button type="button" class="preset-btn" onclick="applyPreset('highway_fatal')">
+                    &#128680; High-Speed Highway Collision
+                </button>
+                <button type="button" class="preset-btn" onclick="applyPreset('urban_minor')">
+                    &#128663; Urban Low-Speed Fender Bender
+                </button>
+                <button type="button" class="preset-btn" onclick="applyPreset('storm_severe')">
+                    &#10052; Severe Winter Ice Pileup
+                </button>
+                <button type="button" class="preset-btn" onclick="resetDefaults()" style="color: var(--text-muted);">
+                    &#8635; Reset Defaults
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Incident Assessment Form -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Incident Assessment Parameters</h2>
+                    <p class="card-desc">
+                        Ingest observable road, collision, and driver features. Form inputs are dynamically validated against the training schema.
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Schema Parity</span>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #10b981;">100% Calibrated</div>
+                </div>
+            </div>
+
+            <form action="/predict" method="POST" id="predictionForm">
+                <!-- Group 1: Vehicle & Velocity Dynamics -->
+                <div class="form-section-title">
+                    <span>&#128663;</span> Section 1: Vehicle Velocity &amp; Driver Demographics
+                </div>
+                <div class="form-grid">
+                    {% if 'Driver_Age' in feature_schema %}
+                    <div class="form-group">
+                        <div class="form-label-wrap">
+                            <label for="Driver_Age">Driver Age</label>
+                            <span class="form-badge-val" id="val_Driver_Age">Years</span>
+                        </div>
+                        <input type="number" name="Driver_Age" id="Driver_Age" class="form-control"
+                               value="{{ feature_schema['Driver_Age'].default }}" 
+                               min="16" max="100" step="1" required>
+                        <span class="form-hint">Recorded driver age (Range: 17 – 85)</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Vehicle_Speed' in feature_schema %}
+                    <div class="form-group">
+                        <div class="form-label-wrap">
+                            <label for="Vehicle_Speed">Vehicle Speed (km/h)</label>
+                            <span class="form-badge-val" id="val_Vehicle_Speed">Estimated km/h</span>
+                        </div>
+                        <input type="number" name="Vehicle_Speed" id="Vehicle_Speed" class="form-control"
+                               value="{{ feature_schema['Vehicle_Speed'].default }}" 
+                               min="10" max="200" step="1" required oninput="calculateSpeedDelta()">
+                        <span class="form-hint">Vehicle velocity at point of impact</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Speed_Limit' in feature_schema %}
+                    <div class="form-group">
+                        <div class="form-label-wrap">
+                            <label for="Speed_Limit">Speed Limit (km/h)</label>
+                            <span class="form-badge-val" id="val_Speed_Limit">Posted Limit</span>
+                        </div>
+                        <select name="Speed_Limit" id="Speed_Limit" class="form-control" required onchange="calculateSpeedDelta()">
+                            <option value="30">30 km/h (School / Residential)</option>
+                            <option value="50" selected>50 km/h (Urban Arterial)</option>
+                            <option value="60">60 km/h (City Boulevard)</option>
+                            <option value="80">80 km/h (Rural Two-Lane)</option>
+                            <option value="100">100 km/h (Expressway)</option>
+                            <option value="120">120 km/h (Motorway / Interstate)</option>
+                        </select>
+                        <span class="form-hint">Regulated speed limit on road corridor</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Vehicle_Type' in feature_schema %}
+                    <div class="form-group">
+                        <div class="form-label-wrap">
+                            <label for="Vehicle_Type">Vehicle Type</label>
+                            <span class="form-badge-val">Classification</span>
+                        </div>
+                        <select name="Vehicle_Type" id="Vehicle_Type" class="form-control" required>
+                            {% for opt in feature_schema['Vehicle_Type'].categories %}
+                            <option value="{{ opt }}" {% if opt == feature_schema['Vehicle_Type'].default %}selected{% endif %}>
+                                {{ opt | replace('_', ' ') }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Vulnerability factor (e.g. Motorcycle = High Risk)</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Live Speed Delta Callout -->
+                <div class="live-speed-delta" id="speedDeltaContainer">
+                    <span>&#9888; Velocity Differential (<span style="font-family: monospace;">Speed &minus; Speed Limit</span>):</span>
+                    <span class="delta-badge" id="speedDeltaBadge" style="background: #e2e8f0; color: #334155;">+0.0 km/h</span>
+                </div>
+
+                <!-- Group 2: Environmental & Road Friction -->
+                <div class="form-section-title" style="margin-top: 2rem;">
+                    <span>&#127783;</span> Section 2: Atmospheric Visibility &amp; Road Surface Friction
+                </div>
+                <div class="form-grid">
+                    {% if 'Weather_Conditions' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Weather_Conditions">Weather Conditions</label>
+                        <select name="Weather_Conditions" id="Weather_Conditions" class="form-control" required>
+                            {% for opt in feature_schema['Weather_Conditions'].categories %}
+                            <option value="{{ opt }}" {% if opt == feature_schema['Weather_Conditions'].default %}selected{% endif %}>
+                                {{ opt | replace('_', ' ') }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Meteorological condition during crash</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Road_Surface_Conditions' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Road_Surface_Conditions">Road Surface Conditions</label>
+                        <select name="Road_Surface_Conditions" id="Road_Surface_Conditions" class="form-control" required>
+                            {% for opt in feature_schema['Road_Surface_Conditions'].categories %}
+                            <option value="{{ opt }}" {% if opt == feature_schema['Road_Surface_Conditions'].default %}selected{% endif %}>
+                                {{ opt | replace('_', ' ') }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Pavement traction &amp; surface friction</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Lighting_Conditions' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Lighting_Conditions">Lighting Conditions</label>
+                        <select name="Lighting_Conditions" id="Lighting_Conditions" class="form-control" required>
+                            {% for opt in feature_schema['Lighting_Conditions'].categories %}
+                            <option value="{{ opt }}" {% if opt == feature_schema['Lighting_Conditions'].default %}selected{% endif %}>
+                                {{ opt | replace('_', ' ') }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Ambient light and artificial street illumination</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Urban_Rural' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Urban_Rural">Area Classification</label>
+                        <select name="Urban_Rural" id="Urban_Rural" class="form-control" required>
+                            {% for opt in feature_schema['Urban_Rural'].categories %}
+                            <option value="{{ opt }}" {% if opt == feature_schema['Urban_Rural'].default %}selected{% endif %}>
+                                {{ opt }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Response distance &amp; roadway topology</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Group 3: Driver Behavior & Multi-Vehicle Dynamics -->
+                <div class="form-section-title" style="margin-top: 2rem;">
+                    <span>&#9888;</span> Section 3: Driver Behavior &amp; Casualty Impact Severity
+                </div>
+                <div class="form-grid">
+                    {% if 'Driver_Alcohol' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Driver_Alcohol">Driver Alcohol Involved</label>
+                        <select name="Driver_Alcohol" id="Driver_Alcohol" class="form-control" required>
+                            {% for opt in feature_schema['Driver_Alcohol'].categories %}
+                            <option value="{{ opt }}" {% if opt == 'No' %}selected{% endif %}>
+                                {{ opt }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Impairment indicator</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Seatbelt_Restraint' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Seatbelt_Restraint">Seatbelt / Safety Restraint</label>
+                        <select name="Seatbelt_Restraint" id="Seatbelt_Restraint" class="form-control" required>
+                            {% for opt in feature_schema['Seatbelt_Restraint'].categories %}
+                            <option value="{{ opt }}" {% if opt == 'Worn' %}selected{% endif %}>
+                                {{ opt | replace('_', ' ') }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Occupant containment status</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Traffic_Density' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Traffic_Density">Traffic Density</label>
+                        <select name="Traffic_Density" id="Traffic_Density" class="form-control" required>
+                            {% for opt in feature_schema['Traffic_Density'].categories %}
+                            <option value="{{ opt }}" {% if opt == feature_schema['Traffic_Density'].default %}selected{% endif %}>
+                                {{ opt }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-hint">Surrounding congestion level</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Number_of_Vehicles' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Number_of_Vehicles">Number of Vehicles</label>
+                        <input type="number" name="Number_of_Vehicles" id="Number_of_Vehicles" class="form-control"
+                               value="{{ feature_schema['Number_of_Vehicles'].default }}" min="1" max="10" step="1" required>
+                        <span class="form-hint">Total multi-vehicle collision participants</span>
+                    </div>
+                    {% endif %}
+
+                    {% if 'Number_of_Casualties' in feature_schema %}
+                    <div class="form-group">
+                        <label for="Number_of_Casualties">Number of Casualties</label>
+                        <input type="number" name="Number_of_Casualties" id="Number_of_Casualties" class="form-control"
+                               value="{{ feature_schema['Number_of_Casualties'].default }}" min="1" max="15" step="1" required>
+                        <span class="form-hint">Estimated victims requiring medical attention</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Fallback render for custom uploaded CSV fields in advance mode -->
+                    {% for feat_name, schema in feature_schema.items() %}
+                        {% if feat_name not in ['Driver_Age', 'Vehicle_Speed', 'Speed_Limit', 'Vehicle_Type', 'Weather_Conditions', 'Road_Surface_Conditions', 'Lighting_Conditions', 'Urban_Rural', 'Driver_Alcohol', 'Seatbelt_Restraint', 'Traffic_Density', 'Number_of_Vehicles', 'Number_of_Casualties'] %}
+                        <div class="form-group">
+                            <label for="{{ feat_name }}">{{ feat_name | replace('_', ' ') }}</label>
+                            {% if schema.type == 'categorical' %}
+                            <select name="{{ feat_name }}" id="{{ feat_name }}" class="form-control" required>
+                                {% for opt in schema.categories %}
+                                <option value="{{ opt }}">{{ opt }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="number" name="{{ feat_name }}" id="{{ feat_name }}" class="form-control"
+                                   value="{{ schema.default }}" step="any" required>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="resetDefaults()">
+                        &#8635; Reset to Baseline
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span>&#9889; Evaluate Severity Risk &rarr;</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- System Architecture Specification Bar -->
+        <section class="card" style="padding: 1.5rem 2rem;">
+            <div class="card-header" style="margin-bottom: 1rem; padding-bottom: 0.75rem;">
+                <h3 class="card-title" style="font-size: 1.1rem;">Active Model Specification</h3>
+                <p class="card-desc">Production deployment parameters from training metadata</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; align-items: center;">
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Active Pipeline</span>
+                    <div style="font-weight: 800; font-size: 1.15rem; color: var(--primary);">{{ selected_model }}</div>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Selection Metric</span>
+                    <div style="font-weight: 800; font-size: 1.15rem; color: #10b981;">Macro F1: {{ model_metrics.macro_f1 }}</div>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Discriminative Power</span>
+                    <div style="font-weight: 800; font-size: 1.15rem; color: #6366f1;">ROC-AUC: {{ model_metrics.roc_auc }}</div>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Target Classes</span>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">{{ target_classes | join(' &bull; ') }}</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <strong style="color: white;">Severity Prediction Project</strong> &bull; Production Machine Learning Operations
+                <div style="margin-top: 0.25rem; font-size: 0.8rem; color: #64748b;">
+                    Full Lifecycle Parity (M1-M5) &bull; Zero Training-Serving Skew &bull; Class Balanced Cost Sensitivity
+                </div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">
+                Host: <span style="color: #60a5fa;">0.0.0.0:5000</span> | Container: <span style="color: #34d399;">Docker Ready</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Client-side Scenario Presets & Dynamics -->
+    <script>
+        function calculateSpeedDelta() {
+            const speedInput = document.getElementById('Vehicle_Speed');
+            const limitInput = document.getElementById('Speed_Limit');
+            const badge = document.getElementById('speedDeltaBadge');
+            if (!speedInput || !limitInput || !badge) return;
+
+            const speed = parseFloat(speedInput.value) || 0;
+            const limit = parseFloat(limitInput.value) || 50;
+            const delta = speed - limit;
+
+            badge.textContent = (delta >= 0 ? '+' : '') + delta.toFixed(1) + ' km/h';
+
+            if (delta > 30) {
+                badge.style.background = '#fee2e2';
+                badge.style.color = '#dc2626';
+            } else if (delta > 0) {
+                badge.style.background = '#fef3c7';
+                badge.style.color = '#d97706';
+            } else {
+                badge.style.background = '#dcfce7';
+                badge.style.color = '#16a34a';
+            }
+        }
+
+        function setVal(id, val) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = val;
+                el.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function applyPreset(preset) {
+            if (preset === 'highway_fatal') {
+                setVal('Driver_Age', 26);
+                setVal('Vehicle_Speed', 125);
+                setVal('Speed_Limit', 60);
+                setVal('Vehicle_Type', 'Motorcycle');
+                setVal('Weather_Conditions', 'Rainy');
+                setVal('Road_Surface_Conditions', 'Wet');
+                setVal('Lighting_Conditions', 'Darkness_No_Lights');
+                setVal('Urban_Rural', 'Rural');
+                setVal('Driver_Alcohol', 'Yes');
+                setVal('Seatbelt_Restraint', 'Not_Worn');
+                setVal('Traffic_Density', 'Medium');
+                setVal('Number_of_Vehicles', 2);
+                setVal('Number_of_Casualties', 3);
+            } else if (preset === 'urban_minor') {
+                setVal('Driver_Age', 38);
+                setVal('Vehicle_Speed', 32);
+                setVal('Speed_Limit', 50);
+                setVal('Vehicle_Type', 'Sedan');
+                setVal('Weather_Conditions', 'Clear');
+                setVal('Road_Surface_Conditions', 'Dry');
+                setVal('Lighting_Conditions', 'Daylight');
+                setVal('Urban_Rural', 'Urban');
+                setVal('Driver_Alcohol', 'No');
+                setVal('Seatbelt_Restraint', 'Worn');
+                setVal('Traffic_Density', 'High');
+                setVal('Number_of_Vehicles', 1);
+                setVal('Number_of_Casualties', 1);
+            } else if (preset === 'storm_severe') {
+                setVal('Driver_Age', 45);
+                setVal('Vehicle_Speed', 85);
+                setVal('Speed_Limit', 60);
+                setVal('Vehicle_Type', 'SUV');
+                setVal('Weather_Conditions', 'Snowy');
+                setVal('Road_Surface_Conditions', 'Ice');
+                setVal('Lighting_Conditions', 'Darkness_Lights_Lit');
+                setVal('Urban_Rural', 'Rural');
+                setVal('Driver_Alcohol', 'No');
+                setVal('Seatbelt_Restraint', 'Worn');
+                setVal('Traffic_Density', 'Medium');
+                setVal('Number_of_Vehicles', 3);
+                setVal('Number_of_Casualties', 2);
+            }
+            calculateSpeedDelta();
+        }
+
+        function resetDefaults() {
+            setVal('Driver_Age', 42);
+            setVal('Vehicle_Speed', 55);
+            setVal('Speed_Limit', 50);
+            setVal('Vehicle_Type', 'Sedan');
+            setVal('Weather_Conditions', 'Clear');
+            setVal('Road_Surface_Conditions', 'Dry');
+            setVal('Lighting_Conditions', 'Daylight');
+            setVal('Urban_Rural', 'Urban');
+            setVal('Driver_Alcohol', 'No');
+            setVal('Seatbelt_Restraint', 'Worn');
+            setVal('Traffic_Density', 'Medium');
+            setVal('Number_of_Vehicles', 1);
+            setVal('Number_of_Casualties', 1);
+            calculateSpeedDelta();
+        }
+
+        window.addEventListener('DOMContentLoaded', calculateSpeedDelta);
+    </script>
+</body>
+</html>

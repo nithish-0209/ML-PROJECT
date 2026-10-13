@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture &amp; Methodology | Severity Prediction System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Lightbox modal for EDA charts */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 2px solid #334155;
+            background: #0f172a;
+        }
+        .modal-close {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            color: #ffffff;
+            font-size: 2rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a href="/" class="nav-brand">
+            <div class="nav-brand-logo">SP</div>
+            <div>
+                <div>Severity Prediction System</div>
+                <div style="font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-top: -2px;">
+                    Enterprise Emergency Triage Platform
+                </div>
+            </div>
+            <span class="nav-brand-badge">PROD v2.4</span>
+        </a>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="/">&#8592; Assessment Portal</a></li>
+                <li><a href="/about" class="active">&#9670; System Architecture &amp; Metrics</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="hero-banner">
+            <div class="hero-tag">&#128300; PRODUCTION SPECIFICATION &amp; METHODOLOGY</div>
+            <h1 class="hero-title">System Architecture &amp; <span>ML Lifecycle</span></h1>
+            <p class="hero-subtitle">
+                Comprehensive technical audit covering training-serving parity, algorithm benchmarking, 
+                exploratory data analytics, and operational deployment governance.
+            </p>
+        </section>
+
+        <!-- KPI Performance Metrics Deck -->
+        <section class="kpi-deck">
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-label">Model Accuracy</div>
+                <div class="kpi-stat-number">{{ (metrics.accuracy * 100) | round(1) if metrics.accuracy else '73.9' }}%</div>
+                <div class="kpi-stat-delta">&#9650; Stratified Holdout Test</div>
+            </div>
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-label">Champion Macro F1</div>
+                <div class="kpi-stat-number" style="color: var(--primary);">{{ metrics.macro_f1 if metrics.macro_f1 else '0.6887' }}</div>
+                <div class="kpi-stat-delta">&#9650; Cost-Balanced Metric</div>
+            </div>
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-label">Discriminative ROC-AUC</div>
+                <div class="kpi-stat-number" style="color: #8b5cf6;">{{ metrics.roc_auc if metrics.roc_auc else '0.9178' }}</div>
+                <div class="kpi-stat-delta">&#9650; Multiclass One-vs-Rest</div>
+            </div>
+            <div class="kpi-stat-card">
+                <div class="kpi-stat-label">Training-Serving Skew</div>
+                <div class="kpi-stat-number" style="color: #10b981;">0.00%</div>
+                <div class="kpi-stat-delta">&#10003; Serialized Pipeline Parity</div>
+            </div>
+        </section>
+
+        <!-- Benchmark Algorithm Scorecard -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">&#128202; Supervised Learning Benchmark Scorecard</h2>
+                    <p class="card-desc">Comprehensive comparative evaluation across candidate architectures</p>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Selection Criterion:</span>
+                    <strong style="color: var(--primary);">Macro F1</strong>
+                </div>
+            </div>
+
+            <div class="data-table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Algorithm Architecture</th>
+                            <th>Accuracy</th>
+                            <th>Macro F1 (Primary)</th>
+                            <th>Weighted F1</th>
+                            <th>Precision (Macro)</th>
+                            <th>Recall (Macro)</th>
+                            <th>ROC-AUC (OVR)</th>
+                            <th>Deployment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, met in all_models.items() %}
+                        {% set is_champ = (name == selected_model) %}
+                        <tr {% if is_champ %}style="background-color: #eff6ff; font-weight: bold;"{% endif %}>
+                            <td>
+                                {{ name }}
+                                {% if is_champ %}
+                                <span style="background: #2563eb; color: white; font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.4rem; text-transform: uppercase;">
+                                    CHAMPION
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ (met.accuracy * 100) | round(2) }}%</td>
+                            <td style="color: var(--primary); font-family: monospace; font-size: 0.95rem;">{{ met.macro_f1 }}</td>
+                            <td>{{ met.weighted_f1 }}</td>
+                            <td>{{ met.macro_precision }}</td>
+                            <td>{{ met.macro_recall }}</td>
+                            <td style="font-family: monospace;">{{ met.roc_auc }}</td>
+                            <td>
+                                {% if is_champ %}
+                                <span style="color: #16a34a; font-weight: 800;">&#9679; Active in Production</span>
+                                {% else %}
+                                <span style="color: var(--text-muted);">&#9675; Benchmarked Baseline</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Exploratory Data Analysis Gallery -->
+        {% if eda_charts %}
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">&#128444; Exploratory Data Analysis (EDA) Visualizations</h2>
+                    <p class="card-desc">Pre-modeling data integrity, distribution shapes, and correlation discoveries</p>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Click any chart to zoom</span>
+                </div>
+            </div>
+
+            <div class="eda-grid">
+                {% for chart in eda_charts %}
+                <div class="eda-card">
+                    <div class="eda-card-img-wrap" onclick="openModal('/outputs/eda/{{ chart.filename }}')">
+                        <img src="/outputs/eda/{{ chart.filename }}" alt="{{ chart.title }}" loading="lazy">
+                    </div>
+                    <div class="eda-card-info">
+                        <div class="eda-card-title">{{ chart.title }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Modal Lightbox for EDA Zoom -->
+        <div class="modal" id="chartModal" onclick="closeModal()">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <img class="modal-content" id="modalImg" src="" alt="Zoomed Chart">
+        </div>
+
+        <!-- Curriculum Modules M1 to M5 Technical Breakdown -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">&#128218; Curriculum Topics &amp; Engineering Disciplines</h2>
+                    <p class="card-desc">Architectural implementation breakdown across all 5 core ML systems modules</p>
+                </div>
+            </div>
+
+            <div class="topic-timeline">
+                <!-- Module 1 -->
+                <div class="topic-box" style="border-left-color: #3b82f6;">
+                    <span class="topic-badge">Module 1</span>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">
+                        M1 — Machine Learning Lifecycle &amp; Zero Training-Serving Skew
+                    </h3>
+                    <p style="color: var(--text-muted);">
+                        The system establishes a clean training-serving boundary. Preprocessing logic is never redefined in Flask. 
+                        The fitted <code style="background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px;">ColumnTransformer</code> 
+                        is serialized directly to <code style="background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px;">artifacts/preprocessing.pkl</code> 
+                        and loaded during online serving to ensure zero statistical drift.
+                    </p>
+                    <pre class="code-terminal">Training Flow:   Raw CSV &rarr; Clean &amp; Deduplicate &rarr; Feature Engineering &rarr; Preprocessor Fit &rarr; Model Fit &rarr; Artifacts
+Serving Flow:    HTTP POST &rarr; Schema Validation &rarr; Feature Engineering &rarr; Preprocessor Transform &rarr; Inference &rarr; Response</pre>
+                </div>
+
+                <!-- Module 2 -->
+                <div class="topic-box" style="border-left-color: #10b981;">
+                    <span class="topic-badge" style="background: #ecfdf5; color: #047857;">Module 2</span>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">
+                        M2 — Supervised Learning &amp; Regularized Linear Classification
+                    </h3>
+                    <p style="color: var(--text-muted);">
+                        Implements <code style="background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px;">LogisticRegression</code> 
+                        equipped with <code style="background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px;">class_weight='balanced'</code> 
+                        and L2 ridge penalty. Continuous metrics are standardized using <code style="background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px;">StandardScaler</code> 
+                        to maintain convex optimization stability, while nominal features utilize <code style="background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px;">OneHotEncoder(handle_unknown='ignore')</code>.
+                    </p>
+                </div>
+
+                <!-- Module 3 -->
+                <div class="topic-box" style="border-left-color: #f59e0b;">
+                    <span class="topic-badge" style="background: #fffbeb; color: #b45309;">Module 3</span>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">
+                        M3 — Tree-Based Ensembles: Bagging vs. Boosting
+                    </h3>
+                    <p style="color: var(--text-muted);">
+                        Benchmarks non-linear orthogonal splits:
+                    </p>
+                    <ul style="margin: 0.5rem 0 0.5rem 1.5rem; color: var(--text-muted);">
+                        <li><strong>Decision Tree:</strong> Fast orthogonal tree with depth pruning (<code style="background: #f1f5f9; padding: 0.1rem 0.3rem;">max_depth=6</code>).</li>
+                        <li><strong>Random Forest:</strong> Bootstrap bagging ensemble of 120 decorrelated trees reducing sample variance.</li>
+                        <li><strong>Gradient Boosting:</strong> Stage-wise additive boosting minimizing multinomial cross-entropy log-loss.</li>
+                    </ul>
+                </div>
+
+                <!-- Module 4 -->
+                <div class="topic-box" style="border-left-color: #8b5cf6;">
+                    <span class="topic-badge" style="background: #f5f3ff; color: #6d28d9;">Module 4</span>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">
+                        M4 — Feature Engineering &amp; Physics-Informed Hazard Indices
+                    </h3>
+                    <p style="color: var(--text-muted);">
+                        Creates leak-free domain interaction features:
+                    </p>
+                    <ul style="margin: 0.5rem 0 0.5rem 1.5rem; color: var(--text-muted);">
+                        <li><code style="background: #f1f5f9; padding: 0.1rem 0.3rem;">Speed_Delta</code> &amp; <code style="background: #f1f5f9; padding: 0.1rem 0.3rem;">Speed_Ratio</code>: Measures velocity relative to posted road limit.</li>
+                        <li><code style="background: #f1f5f9; padding: 0.1rem 0.3rem;">Driver_Impairment_Risk</code>: Interaction active if alcohol or unfastened seatbelts are observed.</li>
+                        <li><code style="background: #f1f5f9; padding: 0.1rem 0.3rem;">Environmental_Hazard_Index</code>: Additive score of poor lighting, adverse weather, and slippery pavement.</li>
+                    </ul>
+                </div>
+
+                <!-- Module 5 -->
+                <div class="topic-box" style="border-left-color: #ef4444;">
+                    <span class="topic-badge" style="background: #fef2f2; color: #b91c1c;">Module 5</span>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">
+                        M5 — Model Evaluation, Selection, and Imbalance Calibration
+                    </h3>
+                    <p style="color: var(--text-muted);">
+                        Because catastrophic fatal collisions represent a life-critical minority (~6%), accuracy is heavily skewed. 
+                        The champion model is crowned via <strong>Macro F1</strong>, enforcing equitable error penalties across all severity classes.
+                    </p>
+                    <pre class="code-terminal">Evaluation Metrics Logged to artifacts/metadata.json:
+- Stratified Holdout Split: 80% Train / 20% Test
+- Macro F1 &amp; Weighted F1
+- Multiclass ROC-AUC (One-vs-Rest)
+- Full Confusion Matrix across Minor, Moderate, Severe, Fatal</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Turnkey Commands & Docker Hub -->
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">&#128011; Deployment &amp; Execution Reference</h2>
+                    <p class="card-desc">Standard reproducible commands for local and containerized execution</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+                <div>
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">Local Execution</h4>
+                    <pre class="code-terminal"># 1. Exploratory Data Analysis
+python -m models.eda
+
+# 2. Model Training &amp; Benchmarking
+python -m models.train_model
+
+# 3. Start Flask Web Application
+python app.py</pre>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem;">Docker &amp; Container Orchestration</h4>
+                    <pre class="code-terminal"># 1. Build and Run via Docker Compose
+docker compose up --build
+
+# 2. Or Single Container Direct Run
+docker build -t severity-prediction-project .
+docker run -p 5000:5000 severity-prediction-project</pre>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <strong style="color: white;">Severity Prediction Project</strong> &bull; Production Machine Learning Operations
+            </div>
+            <div style="font-size: 0.8rem; color: #64748b;">
+                Deployment Specification &bull; Port 5000 &bull; Docker Compliant
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function openModal(imgSrc) {
+            const modal = document.getElementById('chartModal');
+            const img = document.getElementById('modalImg');
+            img.src = imgSrc;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('chartModal');
+            modal.classList.remove('active');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>
